@@ -1,10 +1,7 @@
 const { REST, Routes } = require('discord.js');
-//const { clientId, guildId, token } = require('/Users/hamis/DiceBot/config.json');
+const { clientId, guildId, token } = require('./config.json');
 const fs = require('node:fs');
 const path = require('node:path');
- //initialize dotenv
-
-const { clientId, guildId, token } = require('dotenv').config();
 
 const commands = [];
 // Grab all the command files from the commands directory you created earlier
