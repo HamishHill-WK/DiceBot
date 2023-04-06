@@ -1,12 +1,11 @@
 require('dotenv').config(); //initialize dotenv
-const express = require('express');
-const app = express();
 const net = require('node:net');
-const port = 9999;
 const fs = require('node:fs');
 const path = require('node:path');
+
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
 const { token } = require('./config.json');
+
 const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent]
@@ -62,14 +61,6 @@ async function sendIt(message) {
     }
     channel.send({ content: `message: ${message}` });
 }
-
-//app.get('/', (req, res) => res.send('hello world!!!'));
-
-//app.listen(port, async () => {
-//    console.log("Server at http:://localhost: $port");
-
-//    //sendIt();
-//});
 
 //https://stackoverflow.com/questions/6297616/nodejs-strings-from-client-messages
 var server = net.Server(function (socket) {
