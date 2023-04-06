@@ -1,8 +1,8 @@
 require('dotenv').config(); //initialize dotenv
 const express = require('express');
 const app = express();
+const net = require('node:net');
 const port = 9999;
-
 const fs = require('node:fs');
 const path = require('node:path');
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
@@ -11,9 +11,8 @@ const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent]
 });
-client.commands = new Collection();
-// Create a new client instance
 
+client.commands = new Collection();
 
 const commandsPath = path.join(__dirname, 'commands');
 const commandFiles = fs.readdirSync(commandsPath).filter(file => file.endsWith('.js'));
@@ -53,28 +52,44 @@ client.on(Events.InteractionCreate, async interaction => {
 
 client.on('ready', async () => {
     console.log(`Logged in as ${client.user.tag}!`);
-
-    sendIt();
 });
 
-async function sendIt() {
-    client.on('ready', async () => {
-        const channel = await client.channels.fetch("1075386332630749215")
-        // Note that it's possible the channel couldn't be found
-        if (!channel) {
-            return console.log("could not find channel")
-        }
-        channel.send("beep boop");
-    });
+//https://stackoverflow.com/questions/71430312/sending-message-to-specific-channel-in-discord-js
+async function sendIt(message) {
+    const channel = await client.channels.fetch("1075386332630749215");
+    if (!channel) {
+        return console.log("could not find channel");
+    }
+    channel.send({ content: `message: ${message}` });
 }
 
-app.get('/', (req, res) => res.send('hello world!!!'));
+//app.get('/', (req, res) => res.send('hello world!!!'));
 
-app.listen(port, async () => {
-    console.log("Server at http:://localhost: $port");
+//app.listen(port, async () => {
+//    console.log("Server at http:://localhost: $port");
 
-    //sendIt();
+//    //sendIt();
+//});
+
+//https://stackoverflow.com/questions/6297616/nodejs-strings-from-client-messages
+var server = net.Server(function (socket) {
+    socket.setEncoding('ascii');
+
+    socket.on('data', function (data) {
+        // do something with data
+        console.log(`${data}`);
+        sendIt(data);
+    });
+
+    socket.on('end', function () {
+        // socket disconnected, cleanup
+    });
+
+    socket.on('error', function (exception) {
+        // do something with exception
+    });
 });
+server.listen(4000);
 
 client.on('messageCreate', msg => {
     if (msg.content === 'ping') {
