@@ -1,7 +1,9 @@
+https://discordjs.guide/creating-your-bot/#using-config-json
 require('dotenv').config(); //initialize dotenv
 const net = require('node:net');
 const fs = require('node:fs');
 const path = require('node:path');
+const port = 4000;
 
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
 const { token } = require('./config.json');
@@ -11,6 +13,7 @@ const client = new Client({
         GatewayIntentBits.MessageContent]
 });
 
+https://discordjs.guide/creating-your-bot/slash-commands.html#before-you-continue
 client.commands = new Collection();
 
 const commandsPath = path.join(__dirname, 'commands');
@@ -51,6 +54,10 @@ client.on(Events.InteractionCreate, async interaction => {
 
 client.on('ready', async () => {
     console.log(`Logged in as ${client.user.tag}!`);
+    sendIp();
+    client.guilds.cache.forEach((guild) => {
+        console.log(`${guild.name} | ${guild.memberCount} | ${guild.id}`)
+    })
 });
 
 //https://stackoverflow.com/questions/71430312/sending-message-to-specific-channel-in-discord-js
@@ -62,14 +69,30 @@ async function sendIt(message) {
     channel.send({ content: `message: ${message}` });
 }
 
+async function sendIp() {
+    const channel = await client.channels.fetch("1075386332630749215");
+    if (!channel) {
+        return console.log("could not find channel");
+    }
+    channel.send({ content: `server port + ip: ${port} , 192.168.0.14` });
+}
+
 //https://stackoverflow.com/questions/6297616/nodejs-strings-from-client-messages
 var server = net.Server(function (socket) {
     socket.setEncoding('ascii');
 
     socket.on('data', function (data) {
         // do something with data
-        console.log(`${data}`);
-        sendIt(data);
+        const s = data
+
+        if (s === "connect") { 
+            client.guilds.cache.forEach((guild) => {
+                s = guild.name
+            })
+            socket.write(s);
+        }
+        console.log(`${s}`);
+        sendIt(s);
     });
 
     socket.on('end', function () {
@@ -80,7 +103,7 @@ var server = net.Server(function (socket) {
         // do something with exception
     });
 });
-server.listen(4000);
+server.listen(port);
 
 client.on('messageCreate', msg => {
     if (msg.content === 'ping') {
