@@ -13,62 +13,6 @@ var os = require('os');
 var interfaces = os.networkInterfaces();
 var addresses = [];
 
-// Define the PlayerCharacter class
-class PlayerCharacter {
-    constructor(name, health) {
-        this.name = name;
-        this.health = health || 100;
-        this._healthChangeCallbacks = [];
-    }
-
-    takeDamage(amount) {
-        this.health -= amount;
-        this._triggerHealthChangeCallbacks();
-    }
-
-    heal(amount) {
-        this.health += amount;
-        this._triggerHealthChangeCallbacks();
-    }
-
-    _triggerHealthChangeCallbacks() {
-        for (const callback of this._healthChangeCallbacks) {
-            callback(this.health);
-        }
-    }
-
-    onHealthChange(callback) {
-        this._healthChangeCallbacks.push(callback);
-    }
-}
-
-async function createPlayerCharacters(guild) {
-    const members = await guild.members.fetch();
-    const playerCharacters = [];
-    members.forEach((member) => {
-        const playerCharacter = new PlayerCharacter(member.user.username, 100);
-        playerCharacters.push(playerCharacter);
-        const role = guild.roles.cache.find((r) => r.name === "Player");
-        member.roles.add(role).then(() => {
-            console.log(`Added "Player" role to ${member.user.username}`);
-            const healthRole = guild.roles.cache.find((r) => r.name === "Health");
-            const nameRole = guild.roles.cache.find((r) => r.name === "Name");
-            member.roles.add(healthRole, { name: `health: ${playerCharacter.health}` });
-            console.log(`Assigned "Health" role with health ${playerCharacter.health} to ${member.user.username}`);
-            playerCharacter.onHealthChange((newHealth) => {
-                member.roles.remove(healthRole).then(() => {
-                    member.roles.add(healthRole, { name: `health: ${newHealth}` });
-                    console.log(`Updated "Health" role with health ${newHealth} for ${member.user.username}`);
-                });
-            });
-            console.log(`Assigned "Name" role with name ${playerCharacter.name} to ${member.user.username}`);
-            member.roles.add(nameRole, { name: `name: ${playerCharacter.name}` });
-        });
-    });
-    return playerCharacters;
-}
-
-
 const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages,
         GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers]
@@ -133,6 +77,7 @@ async function sendIt(message) {
 async function sendIp() {
     const channel = await client.channels.fetch("1096055329487335495");
 
+    https://stackoverflow.com/questions/10750303/how-can-i-get-the-local-ip-address-in-node-js
     for (var k in interfaces) {
         for (var k2 in interfaces[k]) {
             var address = interfaces[k][k2];
@@ -188,11 +133,6 @@ client.on('messageCreate', async msg => {
         msg.reply("" + c);
     }
 
-    if (msg.content === '!create-players') {
-        const guild = msg.guild;
-        const playerCharacters = await createPlayerCharacters(guild);
-        console.log(playerCharacters);
-    }
 });
 
 //make sure this line is the last line
