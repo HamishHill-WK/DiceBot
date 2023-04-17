@@ -6,11 +6,72 @@ const path = require('node:path');
 const port = 4000;
 
 const { Client, Collection, Events, GatewayIntentBits } = require('discord.js');
-const { token } = require('./config.json');
+const { token, guildId } = require('./config.json');
+
+var os = require('os');
+
+var interfaces = os.networkInterfaces();
+var addresses = [];
+
+// Define the PlayerCharacter class
+class PlayerCharacter {
+    constructor(name, health) {
+        this.name = name;
+        this.health = health || 100;
+        this._healthChangeCallbacks = [];
+    }
+
+    takeDamage(amount) {
+        this.health -= amount;
+        this._triggerHealthChangeCallbacks();
+    }
+
+    heal(amount) {
+        this.health += amount;
+        this._triggerHealthChangeCallbacks();
+    }
+
+    _triggerHealthChangeCallbacks() {
+        for (const callback of this._healthChangeCallbacks) {
+            callback(this.health);
+        }
+    }
+
+    onHealthChange(callback) {
+        this._healthChangeCallbacks.push(callback);
+    }
+}
+
+async function createPlayerCharacters(guild) {
+    const members = await guild.members.fetch();
+    const playerCharacters = [];
+    members.forEach((member) => {
+        const playerCharacter = new PlayerCharacter(member.user.username, 100);
+        playerCharacters.push(playerCharacter);
+        const role = guild.roles.cache.find((r) => r.name === "Player");
+        member.roles.add(role).then(() => {
+            console.log(`Added "Player" role to ${member.user.username}`);
+            const healthRole = guild.roles.cache.find((r) => r.name === "Health");
+            const nameRole = guild.roles.cache.find((r) => r.name === "Name");
+            member.roles.add(healthRole, { name: `health: ${playerCharacter.health}` });
+            console.log(`Assigned "Health" role with health ${playerCharacter.health} to ${member.user.username}`);
+            playerCharacter.onHealthChange((newHealth) => {
+                member.roles.remove(healthRole).then(() => {
+                    member.roles.add(healthRole, { name: `health: ${newHealth}` });
+                    console.log(`Updated "Health" role with health ${newHealth} for ${member.user.username}`);
+                });
+            });
+            console.log(`Assigned "Name" role with name ${playerCharacter.name} to ${member.user.username}`);
+            member.roles.add(nameRole, { name: `name: ${playerCharacter.name}` });
+        });
+    });
+    return playerCharacters;
+}
+
 
 const client = new Client({
     intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages,
-        GatewayIntentBits.MessageContent]
+        GatewayIntentBits.MessageContent, GatewayIntentBits.GuildMembers]
 });
 
 https://discordjs.guide/creating-your-bot/slash-commands.html#before-you-continue
@@ -57,12 +118,12 @@ client.on('ready', async () => {
     sendIp();
     client.guilds.cache.forEach((guild) => {
         console.log(`${guild.name} | ${guild.memberCount} | ${guild.id}`)
-    })
+      })
 });
 
 //https://stackoverflow.com/questions/71430312/sending-message-to-specific-channel-in-discord-js
 async function sendIt(message) {
-    const channel = await client.channels.fetch("1075386332630749215");
+    const channel = await client.channels.fetch("1096055329487335495");
     if (!channel) {
         return console.log("could not find channel");
     }
@@ -70,11 +131,23 @@ async function sendIt(message) {
 }
 
 async function sendIp() {
-    const channel = await client.channels.fetch("1075386332630749215");
+    const channel = await client.channels.fetch("1096055329487335495");
+
+    for (var k in interfaces) {
+        for (var k2 in interfaces[k]) {
+            var address = interfaces[k][k2];
+            if (address.family === 'IPv4' && !address.internal) {
+                addresses.push(address.address);
+            }
+        }
+    }
+
+    console.log(addresses);
+
     if (!channel) {
         return console.log("could not find channel");
     }
-    channel.send({ content: `server port + ip: ${port} , 192.168.0.14` });
+    channel.send({ content: `port ${port} + ip:  ${addresses}` });
 }
 
 //https://stackoverflow.com/questions/6297616/nodejs-strings-from-client-messages
@@ -105,7 +178,7 @@ var server = net.Server(function (socket) {
 });
 server.listen(port);
 
-client.on('messageCreate', msg => {
+client.on('messageCreate', async msg => {
     if (msg.content === 'ping') {
         msg.reply('Pong!');
     }
@@ -113,6 +186,12 @@ client.on('messageCreate', msg => {
     if (msg.content === 'roll 20') {
         int: c = Math.floor(Math.random() * 20);
         msg.reply("" + c);
+    }
+
+    if (msg.content === '!create-players') {
+        const guild = msg.guild;
+        const playerCharacters = await createPlayerCharacters(guild);
+        console.log(playerCharacters);
     }
 });
 

@@ -24,16 +24,21 @@ module.exports = {
 		.addBooleanOption(option =>
 			option.setName('total')
 				.setDescription('Whether or not results should be totalled'))
+		.addIntegerOption(option =>
+			option.setName('bonus')
+				.setDescription("do you have a modifier for this roll?")
+				)
 	
 			,
 	async execute(interaction) {
 		const x = interaction.options.getInteger("number");
 		const y = interaction.options.getInteger("type");
+		const bonus = interaction.options.getInteger("bonus");
 		const b = interaction.options.get("total");
 		let tot = 0;
 		let msg = '';
 		for (let i = 0; i < x; i++) {
-			int: c = Math.floor((Math.random() * y) +1);
+			int: c = Math.floor((Math.random() * y) +1);	//returns a random number between 1 and y
 				msg += (`\nR${i+1}: ${c}`);
 
 			if (b != null && b.value)
@@ -41,7 +46,10 @@ module.exports = {
 		}
 
 		if (b != null && b.value)
-			msg += (`Total: ${tot}`);
+			msg += (`\nTotal: ${tot} +${bonus}`);
+
+		else
+			msg += `+${bonus}`
 
 		await interaction.reply(`Rolled ${x} d${y} and got: \n` + msg);
 	},
