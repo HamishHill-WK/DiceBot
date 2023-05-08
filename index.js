@@ -100,17 +100,22 @@ var server = net.Server(function (socket) {
     socket.setEncoding('ascii');
 
     socket.on('data', function (data) {
-        // do something with data
         const s = data
+        string: msg = ""
+        console.log(`recvd ${data}`)
 
-        if (s === "connect") { 
+        if (s == 0) {//for receiving test message from mobile application 
             client.guilds.cache.forEach((guild) => {
-                s = guild.name
+                msg = guild.name
             })
-            socket.write(s);
+            msg += " SERVERNAMEEND";    
+            socket.write(msg);  //replies with name of the discord server
+            console.log(msg)    
         }
-        console.log(`${s}`);
-        sendIt(s);
+        else {
+            console.log(`${s}`);
+            sendIt(s);
+        }
     });
 
     socket.on('end', function () {
